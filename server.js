@@ -236,7 +236,7 @@ function buildVlessUri(settings) {
     }
   }
 
-  return `vless://${settings.uuid}@${settings.address}:${settings.port}?${params.toString()}#Railway-VLESS`;
+  return `vless://${settings.uuid}@${settings.address}:${settings.port}?${params.toString()}#IsatisStack-VLESS`;
 }
 
 function checkPassword(request, reply) {
