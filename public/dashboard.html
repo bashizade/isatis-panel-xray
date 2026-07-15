@@ -162,13 +162,12 @@
               ALPN
             </label>
 
-            <input
-              id="alpn"
-              name="alpn"
-              type="text"
-              value="h2,http/1.1"
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400"
-            >
+            <select name="alpn" id="alpn" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400">
+                <option value="">select</option>
+                <option value="http/1.1">http/1.1</option>
+                <option value="h2">h2</option>
+                <option value="h3"></option>
+            </select>
           </div>
 
         </div>
@@ -298,7 +297,7 @@
           throw new Error(data.error || 'خطا در دریافت تنظیمات');
         }
 
-        setFormValues(data.settings);
+        //setFormValues(data.settings);
 
         if (data.config) {
           output.value = data.config;
