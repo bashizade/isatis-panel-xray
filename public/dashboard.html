@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>ساخت کانفیگ VLESS</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Tahoma', 'Arial', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="min-h-screen bg-slate-950 text-white font-sans">
+  <div class="max-w-3xl mx-auto px-4 py-8">
+
+    <header class="mb-8">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm text-cyan-400 mb-2">Railway Xray Panel</p>
+          <h1 class="text-2xl md:text-3xl font-bold">
+            ساخت کانفیگ VLESS
+          </h1>
+        </div>
+
+        <div id="status"
+          class="text-xs rounded-full px-3 py-2 bg-slate-800 text-slate-300">
+          آماده
+        </div>
+      </div>
+
+      <p class="text-slate-400 mt-3 text-sm">
+        اطلاعات اتصال را وارد کنید و کانفیگ VLESS را بسازید.
+      </p>
+    </header>
+
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-7 shadow-xl">
+
+      <form id="configForm" class="space-y-5">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+          <div>
+            <label class="block text-sm text-slate-300 mb-2">
+              Address
+            </label>
+
+            <input
+              id="address"
+              name="address"
+              type="text"
+              required
+              placeholder="example.up.railway.app"
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"
+            >
+          </div>
+
+          <div>
+            <label class="block text-sm text-slate-300 mb-2">
+              Port
+            </label>
+
+            <input
+              id="port"
+              name="port"
+              type="number"
+              min="1"
+              max="65535"
+              required
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"
+            >
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm text-slate-300 mb-2">
+              UUID
+            </label>
+
+            <input
+              id="uuid"
+              name="uuid"
+              type="text"
+              required
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400"
+            >
+          </div>
+
+          <div>
+            <label class="block text-sm text-slate-300 mb-2">
+              WebSocket Path
+            </label>
+
+            <input
+              id="path"
+              name="path"
+              type="text"
+              required
+              placeholder="/api/v1/shadcdn/"
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400"
+            >
+          </div>
+
+          <div>
+            <label class="block text-sm text-slate-300 mb-2">
+              Host
+            </label>
+
+            <input
+              id="host"
+              name="host"
+              type="text"
+              required
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"
+            >
+          </div>
+
+          <div>
+            <label class="block text-sm text-slate-300 mb-2">
+              SNI
+            </label>
+
+            <input
+              id="sni"
+              name="sni"
+              type="text"
+              required
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"
+            >
+          </div>
+
+          <div>
+            <label class="block text-sm text-slate-300 mb-2">
+              Fingerprint
+            </label>
+
+            <select
+              id="fingerprint"
+              name="fingerprint"
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"
+            >
+              <option value="chrome">chrome</option>
+              <option value="firefox">firefox</option>
+              <option value="safari">safari</option>
+              <option value="edge">edge</option>
+              <option value="randomized">randomized</option>
+            </select>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm text-slate-300 mb-2">
+              ALPN
+            </label>
+
+            <input
+              id="alpn"
+              name="alpn"
+              type="text"
+              value="h2,http/1.1"
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400"
+            >
+          </div>
+
+        </div>
+
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            id="tls"
+            name="tls"
+            type="checkbox"
+            checked
+            class="w-5 h-5 accent-cyan-400"
+          >
+
+          <span class="text-sm text-slate-300">
+            فعال بودن TLS
+          </span>
+        </label>
+
+        <button
+          type="submit"
+          class="w-full rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 transition"
+        >
+          ساخت و ذخیره کانفیگ
+        </button>
+
+      </form>
+
+      <div id="message" class="hidden mt-5 rounded-xl p-4 text-sm"></div>
+
+      <div id="result" class="hidden mt-6">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-bold">کانفیگ ساخته‌شده</h2>
+
+          <button
+            id="copyButton"
+            type="button"
+            class="text-sm rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-2"
+          >
+            کپی
+          </button>
+        </div>
+
+        <textarea
+          id="configOutput"
+          readonly
+          rows="5"
+          dir="ltr"
+          class="w-full rounded-xl bg-slate-950 border border-slate-700 p-4 text-xs md:text-sm font-mono text-cyan-300 outline-none"
+        ></textarea>
+      </div>
+
+    </section>
+
+    <footer class="text-center text-xs text-slate-600 mt-6">
+      Configuration is stored on the server
+    </footer>
+  </div>
+
+  <script>
+    const form = document.getElementById('configForm');
+    const message = document.getElementById('message');
+    const result = document.getElementById('result');
+    const output = document.getElementById('configOutput');
+    const statusBox = document.getElementById('status');
+    const copyButton = document.getElementById('copyButton');
+
+    const fields = [
+      'address',
+      'port',
+      'uuid',
+      'path',
+      'host',
+      'sni',
+      'fingerprint',
+      'alpn',
+      'tls'
+    ];
+
+    function showMessage(text, type = 'success') {
+      message.classList.remove('hidden');
+
+      if (type === 'error') {
+        message.className =
+          'mt-5 rounded-xl p-4 text-sm bg-red-950 border border-red-800 text-red-300';
+      } else {
+        message.className =
+          'mt-5 rounded-xl p-4 text-sm bg-emerald-950 border border-emerald-800 text-emerald-300';
+      }
+
+      message.textContent = text;
+    }
+
+    function setFormValues(settings) {
+      for (const field of fields) {
+        const element = document.getElementById(field);
+
+        if (!element || settings[field] === undefined) continue;
+
+        if (element.type === 'checkbox') {
+          element.checked = Boolean(settings[field]);
+        } else {
+          element.value = settings[field];
+        }
+      }
+    }
+
+    function getFormValues() {
+      return {
+        address: document.getElementById('address').value.trim(),
+        port: Number(document.getElementById('port').value),
+        uuid: document.getElementById('uuid').value.trim(),
+        path: document.getElementById('path').value.trim(),
+        host: document.getElementById('host').value.trim(),
+        sni: document.getElementById('sni').value.trim(),
+        fingerprint: document.getElementById('fingerprint').value,
+        alpn: document.getElementById('alpn').value.trim(),
+        tls: document.getElementById('tls').checked
+      };
+    }
+
+    async function loadConfig() {
+      try {
+        const response = await fetch('/api/config');
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'خطا در دریافت تنظیمات');
+        }
+
+        setFormValues(data.settings);
+
+        if (data.config) {
+          output.value = data.config;
+          result.classList.remove('hidden');
+        }
+
+        statusBox.textContent = 'تنظیمات ذخیره‌شده بارگذاری شد';
+      } catch (error) {
+        showMessage(error.message, 'error');
+        statusBox.textContent = 'خطا';
+      }
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      statusBox.textContent = 'در حال ذخیره...';
+
+      try {
+        const response = await fetch('/api/config', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(getFormValues())
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'ساخت کانفیگ ناموفق بود');
+        }
+
+        output.value = data.config;
+        result.classList.remove('hidden');
+
+        showMessage('کانفیگ با موفقیت ذخیره و Xray ری‌استارت شد.');
+        statusBox.textContent = 'فعال';
+      } catch (error) {
+        showMessage(error.message, 'error');
+        statusBox.textContent = 'خطا';
+      }
+    });
+
+    copyButton.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(output.value);
+
+      copyButton.textContent = 'کپی شد';
+
+      setTimeout(() => {
+        copyButton.textContent = 'کپی';
+      }, 1500);
+    });
+
+    loadConfig();
+  </script>
+</body>
+</html>

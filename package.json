@@ -1,0 +1,13 @@
+{
+  "name": "vless-railway-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@fastify/static": "^7.0.4",
+    "fastify": "^4.28.1",
+    "http-proxy": "^1.18.1"
+  }
+}
