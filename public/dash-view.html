@@ -56,7 +56,7 @@
                 </div>
                 <div>
                     <label class="block text-sm mb-1">Path</label>
-                    <input type="text" name="path" value="/vss"
+                    <input type="text" name="path" id="path"
                         class="w-full p-2 rounded bg-gray-700 border border-gray-600" required>
                 </div>
                 <div>
@@ -159,7 +159,11 @@
                 return;
             }
 
-            input.value = crypto.randomUUID();
+            let uuid = crypto.randomUUID();
+
+            input.value = uuid;
+
+            document.getElementById('path').value = '/user/' + uuid;
         }
     </script>
 </body>
