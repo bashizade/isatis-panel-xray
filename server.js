@@ -293,7 +293,8 @@ function startMonitor() {
 
 // -------------------- روت‌ها --------------------
 
-app.register(require('@fastify/static'), {
+// بعد (درست)
+fastify.register(require('@fastify/static'), {
   root: path.join(__dirname, 'public')
 });
 
