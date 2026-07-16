@@ -176,15 +176,28 @@ function stopXray() {
 
 async function startXray() {
   await stopXray();
+
+  if (!fs.existsSync(XRAY_BIN)) {
+    fastify.log.error(`باینری Xray در مسیر ${XRAY_BIN} یافت نشد. سرویس VPN غیرفعال است، ولی پنل ادامه می‌دهد.`);
+    xrayProcess = null;
+    return;
+  }
+
   xrayProcess = spawn(XRAY_BIN, ['run', '-config', XRAY_CONFIG_PATH], {
     stdio: ['ignore', 'pipe', 'pipe']
+  });
+
+  // این خط کلیدیه - جلوی کرش کل پروسه رو می‌گیره
+  xrayProcess.on('error', (err) => {
+    fastify.log.error(`اجرای Xray با خطا مواجه شد: ${err.message}`);
+    xrayProcess = null;
   });
 
   xrayProcess.stdout.on('data', (chunk) => fastify.log.info(`[xray] ${chunk.toString().trim()}`));
   xrayProcess.stderr.on('data', (chunk) => fastify.log.error(`[xray] ${chunk.toString().trim()}`));
 
-  xrayProcess.on('exit', (code) => {
-    fastify.log.warn(`Xray با کد ${code} متوقف شد`);
+  xrayProcess.on('exit', (code, signal) => {
+    fastify.log.warn(`Xray با کد ${code} (سیگنال: ${signal}) متوقف شد`);
     xrayProcess = null;
   });
 }
@@ -395,7 +408,11 @@ fastify.get('/api/v1/options', { preHandler: [fastify.authenticate] }, async () 
 // Health Check - برای Zero-downtime restart روی Railway
 // ------------------------------------------------------------------
 fastify.get('/healthz', async () => {
-  return { status: 'ok', xrayRunning: xrayProcess !== null };
+  return {
+    status: 'ok',
+    xrayRunning: xrayProcess !== null,
+    xrayBinaryExists: fs.existsSync(XRAY_BIN)
+  };
 });
 
 // ------------------------------------------------------------------

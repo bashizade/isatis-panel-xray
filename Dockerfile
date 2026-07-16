@@ -1,33 +1,29 @@
-FROM node:20-bookworm-slim
+FROM node:20-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    unzip \
-    ca-certificates \
-    jq \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN XRAY_VERSION=$(curl -fsSL https://api.github.com/repos/XTLS/Xray-core/releases/latest | jq -r .tag_name) \
-    && echo "Downloading Xray ${XRAY_VERSION}" \
-    && curl -fsSL -o /tmp/xray.zip \
-    "https://github.com/XTLS/Xray-core/releases/download/${XRAY_VERSION}/Xray-linux-64.zip" \
-    && unzip -q /tmp/xray.zip -d /usr/local/bin \
-    && rm -f /tmp/xray.zip \
-    && chmod +x /usr/local/bin/xray \
-    && xray version
+# نصب ابزارهای مورد نیاز برای دانلود و اکسترکت
+RUN apt-get update && \
+    apt-get install -y curl unzip ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY package.json ./
-RUN npm install --omit=dev
+# دانلود باینری Xray-core (نسخه رو در صورت نیاز آپدیت کنید)
+ARG XRAY_VERSION=v1.8.24
+RUN curl -fsSL -o /tmp/xray.zip \
+      https://github.com/XTLS/Xray-core/releases/download/${XRAY_VERSION}/Xray-linux-64.zip && \
+    mkdir -p /app/bin && \
+    unzip -o /tmp/xray.zip -d /app/bin && \
+    rm /tmp/xray.zip && \
+    chmod +x /app/bin/xray && \
+    rm -f /app/bin/geoip.dat /app/bin/geosite.dat 2>/dev/null || true
 
-COPY server.js ./
-COPY public ./public
+# نصب dependency های Node
+COPY package*.json ./
+RUN npm ci --omit=dev
 
-RUN mkdir -p /app/data
-
-ENV NODE_ENV=production
+# کپی بقیه‌ی سورس
+COPY . .
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
