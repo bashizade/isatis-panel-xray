@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,8 +35,7 @@
           </h1>
         </div>
 
-        <div id="status"
-          class="text-xs rounded-full px-3 py-2 bg-slate-800 text-slate-300">
+        <div id="status" class="text-xs rounded-full px-3 py-2 bg-slate-800 text-slate-300">
           آماده
         </div>
       </div>
@@ -51,19 +51,21 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
+          <div class="md:col-span-2">
+            <label class="block text-sm text-slate-300 mb-2">
+              نام کانفیگ
+            </label>
+
+            <input id="name" name="name" type="text" required placeholder="مثلاً: My-Server-1"
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
+          </div>
           <div>
             <label class="block text-sm text-slate-300 mb-2">
               Address
             </label>
 
-            <input
-              id="address"
-              name="address"
-              type="text"
-              required
-              placeholder="example.up.railway.app"
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"
-            >
+            <input id="address" name="address" type="text" required placeholder="example.up.railway.app"
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
           </div>
 
           <div>
@@ -71,15 +73,8 @@
               Port
             </label>
 
-            <input
-              id="port"
-              name="port"
-              type="number"
-              min="1"
-              max="65535"
-              required
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"
-            >
+            <input id="port" name="port" type="number" min="1" max="65535" required
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
           </div>
 
           <div class="md:col-span-2">
@@ -87,13 +82,15 @@
               UUID
             </label>
 
-            <input
-              id="uuid"
-              name="uuid"
-              type="text"
-              required
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400"
-            >
+            <div class="flex gap-2">
+              <input id="uuid" name="uuid" type="text" required
+                class="flex-1 rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400">
+
+              <button id="generateUuidButton" type="button"
+                class="shrink-0 rounded-xl bg-slate-700 hover:bg-slate-600 px-4 py-3 text-sm font-bold transition">
+                ساخت خودکار
+              </button>
+            </div>
           </div>
 
           <div>
@@ -101,14 +98,8 @@
               WebSocket Path
             </label>
 
-            <input
-              id="path"
-              name="path"
-              type="text"
-              required
-              placeholder="/api/v1/shadcdn/"
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400"
-            >
+            <input id="path" name="path" type="text" required placeholder="/api/v1/shadcdn/"
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400">
           </div>
 
           <div>
@@ -116,13 +107,8 @@
               Host
             </label>
 
-            <input
-              id="host"
-              name="host"
-              type="text"
-              required
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"
-            >
+            <input id="host" name="host" type="text" required
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
           </div>
 
           <div>
@@ -130,13 +116,8 @@
               SNI
             </label>
 
-            <input
-              id="sni"
-              name="sni"
-              type="text"
-              required
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"
-            >
+            <input id="sni" name="sni" type="text" required
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
           </div>
 
           <div>
@@ -144,11 +125,8 @@
               Fingerprint
             </label>
 
-            <select
-              id="fingerprint"
-              name="fingerprint"
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"
-            >
+            <select id="fingerprint" name="fingerprint"
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
               <option value="chrome">chrome</option>
               <option value="firefox">firefox</option>
               <option value="safari">safari</option>
@@ -162,34 +140,27 @@
               ALPN
             </label>
 
-            <select name="alpn" id="alpn" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400">
-                <option value="">select</option>
-                <option value="http/1.1">http/1.1</option>
-                <option value="h2">h2</option>
-                <option value="h3">h3</option>
+            <select name="alpn" id="alpn"
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400">
+              <option value="">select</option>
+              <option value="http/1.1">http/1.1</option>
+              <option value="h2">h2</option>
+              <option value="h3">h3</option>
             </select>
           </div>
 
         </div>
 
         <label class="flex items-center gap-3 cursor-pointer">
-          <input
-            id="tls"
-            name="tls"
-            type="checkbox"
-            checked
-            class="w-5 h-5 accent-cyan-400"
-          >
+          <input id="tls" name="tls" type="checkbox" checked class="w-5 h-5 accent-cyan-400">
 
           <span class="text-sm text-slate-300">
             فعال بودن TLS
           </span>
         </label>
 
-        <button
-          type="submit"
-          class="w-full rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 transition"
-        >
+        <button type="submit"
+          class="w-full rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 transition">
           ساخت و ذخیره کانفیگ
         </button>
 
@@ -201,22 +172,13 @@
         <div class="flex items-center justify-between mb-2">
           <h2 class="font-bold">کانفیگ ساخته‌شده</h2>
 
-          <button
-            id="copyButton"
-            type="button"
-            class="text-sm rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-2"
-          >
+          <button id="copyButton" type="button" class="text-sm rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-2">
             کپی
           </button>
         </div>
 
-        <textarea
-          id="configOutput"
-          readonly
-          rows="5"
-          dir="ltr"
-          class="w-full rounded-xl bg-slate-950 border border-slate-700 p-4 text-xs md:text-sm font-mono text-cyan-300 outline-none"
-        ></textarea>
+        <textarea id="configOutput" readonly rows="5" dir="ltr"
+          class="w-full rounded-xl bg-slate-950 border border-slate-700 p-4 text-xs md:text-sm font-mono text-cyan-300 outline-none"></textarea>
       </div>
 
     </section>
@@ -233,8 +195,11 @@
     const output = document.getElementById('configOutput');
     const statusBox = document.getElementById('status');
     const copyButton = document.getElementById('copyButton');
+    const generateUuidButton = document.getElementById('generateUuidButton');
+    const uuidInput = document.getElementById('uuid');
 
     const fields = [
+      'name',
       'address',
       'port',
       'uuid',
@@ -276,6 +241,7 @@
 
     function getFormValues() {
       return {
+        name: document.getElementById('name').value.trim(),
         address: document.getElementById('address').value.trim(),
         port: Number(document.getElementById('port').value),
         uuid: document.getElementById('uuid').value.trim(),
@@ -297,7 +263,7 @@
           throw new Error(data.error || 'خطا در دریافت تنظیمات');
         }
 
-        //setFormValues(data.settings);
+        setFormValues(data.settings);
 
         if (data.config) {
           output.value = data.config;
@@ -352,7 +318,13 @@
       }, 1500);
     });
 
+    generateUuidButton.addEventListener('click', () => {
+      uuidInput.value = crypto.randomUUID();
+      uuidInput.focus();
+    });
+
     loadConfig();
   </script>
 </body>
+
 </html>

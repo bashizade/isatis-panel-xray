@@ -34,6 +34,7 @@ function defaultSettings() {
   const address = env('ADDRESS', 'isatis-panel-xray-production.up.railway.app');
 
   return {
+    name: env('CONFIG_NAME', 'Railway-VLESS'),
     address,
     port: Number(env('CLIENT_PORT', '443')),
     uuid: env('UUID', crypto.randomUUID()),
@@ -90,6 +91,7 @@ function isValidUuid(uuid) {
 
 function validateSettings(body) {
   const settings = {
+    name: String(body.name || 'Railway-VLESS').trim() || 'Railway-VLESS',
     address: String(body.address || '').trim(),
     port: Number(body.port || 443),
     uuid: String(body.uuid || '').trim(),
@@ -236,7 +238,9 @@ function buildVlessUri(settings) {
     }
   }
 
-  return `vless://${settings.uuid}@${settings.address}:${settings.port}?${params.toString()}#IsatisStack-VLESS`;
+  const encodedName = encodeURIComponent(settings.name || 'Railway-VLESS');
+
+  return `vless://${settings.uuid}@${settings.address}:${settings.port}?${params.toString()}#${encodedName}`;
 }
 
 function checkPassword(request, reply) {
