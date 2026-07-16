@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 min-h-screen text-white p-6">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">ساخت کانفیگ VLESS</h1>
+            <a href="/logout" class="text-red-400 hover:text-red-300">خروج</a>
+        </div>
+
+        <form id="configForm" class="bg-gray-800 p-6 rounded-lg shadow-lg space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm mb-1">نام کاربری (Remark)</label>
+                    <input type="text" name="username" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required>
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">آدرس (Address)</label>
+                    <input type="text" name="address" placeholder="your-app.up.railway.app" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required>
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">پورت (Port)</label>
+                    <input type="text" name="port" value="443" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required>
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">UUID</label>
+                    <input type="text" name="uuid" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required>
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">پروتکل انتقال</label>
+                    <select name="protocol" class="w-full p-2 rounded bg-gray-700 border border-gray-600">
+                        <option value="ws">WebSocket (ws)</option>
+                        <option value="xhttp">XHTTP</option>
+                        <option value="grpc">gRPC</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">Host (SNI)</label>
+                    <input type="text" name="host" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required>
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">Path</label>
+                    <input type="text" name="path" value="/vss" class="w-full p-2 rounded bg-gray-700 border border-gray-600" required>
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">TLS</label>
+                    <select name="tls" class="w-full p-2 rounded bg-gray-700 border border-gray-600">
+                        <option value="tls">TLS</option>
+                        <option value="reality">Reality</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">Fingerprint</label>
+                    <select name="fp" class="w-full p-2 rounded bg-gray-700 border border-gray-600">
+                        <option value="chrome">Chrome</option>
+                        <option value="firefox">Firefox</option>
+                        <option value="ios">iOS</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">ALPN</label>
+                    <select name="alpn" class="w-full p-2 rounded bg-gray-700 border border-gray-600">
+                        <option value="h3">h3</option>
+                        <option value="h2">h2</option>
+                        <option value="http/1.1">http/1.1</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 p-2 rounded font-bold">ساخت کانفیگ</button>
+        </form>
+
+        <div id="result" class="mt-6 hidden bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h3 class="text-lg font-bold mb-2">لینک کانفیگ:</h3>
+            <div class="flex gap-2">
+                <input id="configLink" type="text" class="w-full p-2 rounded bg-gray-700 border border-gray-600 text-left" readonly>
+                <button onclick="copyLink()" class="bg-blue-600 hover:bg-blue-700 px-4 rounded">کپی</button>
+            </div>
+            <p id="message" class="mt-2 text-green-400"></p>
+        </div>
+
+        <h2 class="text-xl font-bold mt-8 mb-4">کانفیگ‌های ذخیره شده</h2>
+        <div id="configsList" class="space-y-2"></div>
+    </div>
+
+    <script>
+        document.getElementById('configForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            const res = await fetch('/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await res.json();
+            if (result.success) {
+                document.getElementById('result').classList.remove('hidden');
+                document.getElementById('configLink').value = result.link;
+                document.getElementById('message').textContent = result.warning || 'کانفیگ با موفقیت ساخته شد.';
+                loadConfigs();
+            } else {
+                alert('خطا در ساخت کانفیگ');
+            }
+        });
+
+        function copyLink() {
+            const input = document.getElementById('configLink');
+            input.select();
+            document.execCommand('copy');
+            alert('کپی شد!');
+        }
+
+        async function loadConfigs() {
+            const res = await fetch('/api/configs');
+            const configs = await res.json();
+            const container = document.getElementById('configsList');
+            container.innerHTML = '';
+            configs.forEach(c => {
+                container.innerHTML += `
+                    <div class="bg-gray-800 p-4 rounded border border-gray-700">
+                        <div class="flex justify-between">
+                            <span class="font-bold">${c.username}</span>
+                            <span class="text-gray-400 text-sm">${c.created_at}</span>
+                        </div>
+                        <div class="text-sm text-gray-300 mt-1">${c.address}:${c.port} | ${c.protocol} | ${c.path}</div>
+                    </div>
+                `;
+            });
+        }
+
+        loadConfigs();
+    </script>
+</body>
+</html>
