@@ -93,6 +93,42 @@
             </div>
           </div>
 
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            <div>
+              <label class="block text-sm text-slate-300 mb-2">
+                محدودیت زمانی
+              </label>
+              <select id="durationMonths" name="durationMonths"
+                class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
+                <option value="1">۱ ماهه</option>
+                <option value="3">۳ ماهه</option>
+                <option value="6">۶ ماهه</option>
+                <option value="12">۱ ساله</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm text-slate-300 mb-2">
+                محدودیت حجم
+              </label>
+              <select id="trafficLimitGB" name="trafficLimitGB"
+                class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
+                <option value="10">۱۰ گیگابایت</option>
+                <option value="20">۲۰ گیگابایت</option>
+                <option value="30">۳۰ گیگابایت</option>
+                <option value="40">۴۰ گیگابایت</option>
+                <option value="50">۵۰ گیگابایت</option>
+                <option value="60">۶۰ گیگابایت</option>
+                <option value="70">۷۰ گیگابایت</option>
+                <option value="80">۸۰ گیگابایت</option>
+                <option value="90">۹۰ گیگابایت</option>
+                <option value="100">۱۰۰ گیگابایت</option>
+              </select>
+            </div>
+
+          </div>
+
           <div>
             <label class="block text-sm text-slate-300 mb-2">
               WebSocket Path
@@ -166,6 +202,18 @@
 
       </form>
 
+      <div id="limitsSummary" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 hidden">
+        <div class="rounded-xl bg-slate-800 border border-slate-700 p-3 text-sm">
+          <span class="text-slate-400">تاریخ انقضا:</span>
+          <span id="expiresAtText" class="text-cyan-300 font-bold block mt-1"></span>
+        </div>
+
+        <div class="rounded-xl bg-slate-800 border border-slate-700 p-3 text-sm">
+          <span class="text-slate-400">سقف حجم:</span>
+          <span id="trafficLimitText" class="text-cyan-300 font-bold block mt-1"></span>
+        </div>
+      </div>
+
       <div id="message" class="hidden mt-5 rounded-xl p-4 text-sm"></div>
 
       <div id="result" class="hidden mt-6">
@@ -188,143 +236,164 @@
     </footer>
   </div>
 
-  <script>
-    const form = document.getElementById('configForm');
-    const message = document.getElementById('message');
-    const result = document.getElementById('result');
-    const output = document.getElementById('configOutput');
-    const statusBox = document.getElementById('status');
-    const copyButton = document.getElementById('copyButton');
-    const generateUuidButton = document.getElementById('generateUuidButton');
-    const uuidInput = document.getElementById('uuid');
+<script>
+  const form = document.getElementById('configForm');
+  const message = document.getElementById('message');
+  const result = document.getElementById('result');
+  const output = document.getElementById('configOutput');
+  const statusBox = document.getElementById('status');
+  const copyButton = document.getElementById('copyButton');
+  const generateUuidButton = document.getElementById('generateUuidButton');
+  const uuidInput = document.getElementById('uuid');
 
-    const fields = [
-      'name',
-      'address',
-      'port',
-      'uuid',
-      'path',
-      'host',
-      'sni',
-      'fingerprint',
-      'alpn',
-      'tls'
-    ];
+  const fields = [
+    'name',
+    'address',
+    'port',
+    'uuid',
+    'path',
+    'host',
+    'sni',
+    'fingerprint',
+    'alpn',
+    'tls',
+    'durationMonths',
+    'trafficLimitGB'
+  ];
 
-    function showMessage(text, type = 'success') {
-      message.classList.remove('hidden');
+  function showMessage(text, type = 'success') {
+    message.classList.remove('hidden');
 
-      if (type === 'error') {
-        message.className =
-          'mt-5 rounded-xl p-4 text-sm bg-red-950 border border-red-800 text-red-300';
+    if (type === 'error') {
+      message.className =
+        'mt-5 rounded-xl p-4 text-sm bg-red-950 border border-red-800 text-red-300';
+    } else {
+      message.className =
+        'mt-5 rounded-xl p-4 text-sm bg-emerald-950 border border-emerald-800 text-emerald-300';
+    }
+
+    message.textContent = text;
+  }
+
+  function setFormValues(settings) {
+    for (const field of fields) {
+      const element = document.getElementById(field);
+
+      if (!element || settings[field] === undefined) continue;
+
+      if (element.type === 'checkbox') {
+        element.checked = Boolean(settings[field]);
       } else {
-        message.className =
-          'mt-5 rounded-xl p-4 text-sm bg-emerald-950 border border-emerald-800 text-emerald-300';
-      }
-
-      message.textContent = text;
-    }
-
-    function setFormValues(settings) {
-      for (const field of fields) {
-        const element = document.getElementById(field);
-
-        if (!element || settings[field] === undefined) continue;
-
-        if (element.type === 'checkbox') {
-          element.checked = Boolean(settings[field]);
-        } else {
-          element.value = settings[field];
-        }
+        element.value = settings[field];
       }
     }
+  }
 
-    function getFormValues() {
-      return {
-        name: document.getElementById('name').value.trim(),
-        address: document.getElementById('address').value.trim(),
-        port: Number(document.getElementById('port').value),
-        uuid: document.getElementById('uuid').value.trim(),
-        path: document.getElementById('path').value.trim(),
-        host: document.getElementById('host').value.trim(),
-        sni: document.getElementById('sni').value.trim(),
-        fingerprint: document.getElementById('fingerprint').value,
-        alpn: document.getElementById('alpn').value.trim(),
-        tls: document.getElementById('tls').checked
-      };
-    }
+  function getFormValues() {
+    return {
+      name: document.getElementById('name').value.trim(),
+      address: document.getElementById('address').value.trim(),
+      port: Number(document.getElementById('port').value),
+      uuid: document.getElementById('uuid').value.trim(),
+      path: document.getElementById('path').value.trim(),
+      host: document.getElementById('host').value.trim(),
+      sni: document.getElementById('sni').value.trim(),
+      fingerprint: document.getElementById('fingerprint').value,
+      alpn: document.getElementById('alpn').value.trim(),
+      tls: document.getElementById('tls').checked,
+      durationMonths: Number(document.getElementById('durationMonths').value),
+      trafficLimitGB: Number(document.getElementById('trafficLimitGB').value)
+    };
+  }
 
-    async function loadConfig() {
-      try {
-        const response = await fetch('/api/config');
-        const data = await response.json();
+  function showLimitsSummary(settings) {
+    const summary = document.getElementById('limitsSummary');
+    const expiresAtText = document.getElementById('expiresAtText');
+    const trafficLimitText = document.getElementById('trafficLimitText');
 
-        if (!response.ok) {
-          throw new Error(data.error || 'خطا در دریافت تنظیمات');
-        }
+    const expiresDate = new Date(settings.expiresAt);
 
-        setFormValues(data.settings);
+    expiresAtText.textContent = expiresDate.toLocaleDateString('fa-IR');
+    trafficLimitText.textContent = `${settings.trafficLimitGB} گیگابایت`;
 
-        if (data.config) {
-          output.value = data.config;
-          result.classList.remove('hidden');
-        }
+    summary.classList.remove('hidden');
+  }
 
-        statusBox.textContent = 'تنظیمات ذخیره‌شده بارگذاری شد';
-      } catch (error) {
-        showMessage(error.message, 'error');
-        statusBox.textContent = 'خطا';
+  async function loadConfig() {
+    try {
+      const response = await fetch('/api/config');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'خطا در دریافت تنظیمات');
       }
-    }
 
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
+      setFormValues(data.settings);
 
-      statusBox.textContent = 'در حال ذخیره...';
-
-      try {
-        const response = await fetch('/api/config', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(getFormValues())
-        });
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.error || 'ساخت کانفیگ ناموفق بود');
-        }
-
+      if (data.config) {
         output.value = data.config;
         result.classList.remove('hidden');
-
-        showMessage('کانفیگ با موفقیت ذخیره و Xray ری‌استارت شد.');
-        statusBox.textContent = 'فعال';
-      } catch (error) {
-        showMessage(error.message, 'error');
-        statusBox.textContent = 'خطا';
+        showLimitsSummary(data.settings);
       }
-    });
 
-    copyButton.addEventListener('click', async () => {
-      await navigator.clipboard.writeText(output.value);
+      statusBox.textContent = 'تنظیمات ذخیره‌شده بارگذاری شد';
+    } catch (error) {
+      showMessage(error.message, 'error');
+      statusBox.textContent = 'خطا';
+    }
+  }
 
-      copyButton.textContent = 'کپی شد';
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
 
-      setTimeout(() => {
-        copyButton.textContent = 'کپی';
-      }, 1500);
-    });
+    statusBox.textContent = 'در حال ذخیره...';
 
-    generateUuidButton.addEventListener('click', () => {
-      uuidInput.value = crypto.randomUUID();
-      uuidInput.focus();
-    });
+    try {
+      const response = await fetch('/api/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(getFormValues())
+      });
 
-    loadConfig();
-  </script>
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'ساخت کانفیگ ناموفق بود');
+      }
+
+      output.value = data.config;
+      result.classList.remove('hidden');
+
+      showLimitsSummary(data.settings);
+
+      showMessage('کانفیگ با موفقیت ذخیره و Xray ری‌استارت شد.');
+      statusBox.textContent = 'فعال';
+    } catch (error) {
+      showMessage(error.message, 'error');
+      statusBox.textContent = 'خطا';
+    }
+  });
+
+  copyButton.addEventListener('click', async () => {
+    await navigator.clipboard.writeText(output.value);
+
+    copyButton.textContent = 'کپی شد';
+
+    setTimeout(() => {
+      copyButton.textContent = 'کپی';
+    }, 1500);
+  });
+
+  generateUuidButton.addEventListener('click', () => {
+    uuidInput.value = crypto.randomUUID();
+    uuidInput.focus();
+  });
+
+  loadConfig();
+</script>
+
 </body>
 
 </html>

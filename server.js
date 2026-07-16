@@ -1,37 +1,40 @@
-'use strict';
+const fastify = require('fastify')({ logger: true });
+const fs = require('fs/promises');
+const path = require('path');
+const crypto = require('crypto');
+const { exec } = require('child_process');
+const util = require('util');
 
-const path = require('node:path');
-const fs = require('node:fs');
-const crypto = require('node:crypto');
-const { spawn } = require('node:child_process');
-const httpProxy = require('http-proxy');
-const Fastify = require('fastify');
-const fastifyStatic = require('@fastify/static');
+const execAsync = util.promisify(exec);
 
-const app = Fastify({
-  logger: true
-});
+const SETTINGS_PATH = path.join(__dirname, 'data', 'settings.json');
+const XRAY_CONFIG_PATH = path.join(__dirname, 'xray', 'config.json');
 
-const PORT = Number(process.env.PORT || 3000);
-const XRAY_PORT = 10086;
+const ALLOWED_DURATIONS = [1, 3, 6, 12];
+const ALLOWED_TRAFFIC = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
-const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
-const XRAY_CONFIG_FILE = path.join(DATA_DIR, 'xray.json');
+function env(key, fallback) {
+  return process.env[key] !== undefined ? process.env[key] : fallback;
+}
 
-const DASH_PASSWORD = process.env.DASH_PASSWORD || '';
+function addMonths(date, months) {
+  const result = new Date(date);
+  result.setMonth(result.getMonth() + months);
+  return result;
+}
 
-fs.mkdirSync(DATA_DIR, { recursive: true });
+function isValidUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
 
-let xrayProcess = null;
-let currentSettings = null;
-
-function env(name, fallback = '') {
-  return String(process.env[name] || fallback).trim();
+function normalizePath(value) {
+  const raw = String(value || '/').trim();
+  return raw.startsWith('/') ? raw : `/${raw}`;
 }
 
 function defaultSettings() {
   const address = env('ADDRESS', 'isatis-panel-xray-production.up.railway.app');
+  const durationMonths = Number(env('DURATION_MONTHS', '1'));
 
   return {
     name: env('CONFIG_NAME', 'Railway-VLESS'),
@@ -43,50 +46,14 @@ function defaultSettings() {
     sni: env('SNI', address),
     fingerprint: env('FINGERPRINT', 'chrome'),
     alpn: env('ALPN', 'h2,http/1.1'),
-    tls: true
+    tls: true,
+    durationMonths,
+    trafficLimitGB: Number(env('TRAFFIC_LIMIT_GB', '10')),
+    expiresAt: addMonths(new Date(), durationMonths).toISOString(),
+    bytesUsed: 0,
+    disabled: false,
+    disabledReason: null
   };
-}
-
-function loadSettings() {
-  try {
-    if (fs.existsSync(SETTINGS_FILE)) {
-      const saved = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
-      return {
-        ...defaultSettings(),
-        ...saved
-      };
-    }
-  } catch (error) {
-    app.log.error(error, 'Could not load settings');
-  }
-
-  return defaultSettings();
-}
-
-function saveSettings(settings) {
-  fs.writeFileSync(
-    SETTINGS_FILE,
-    JSON.stringify(settings, null, 2),
-    'utf8'
-  );
-}
-
-function normalizePath(value) {
-  let result = String(value || '/').trim();
-
-  if (!result.startsWith('/')) {
-    result = `/${result}`;
-  }
-
-  if (!result.endsWith('/')) {
-    result += '/';
-  }
-
-  return result;
-}
-
-function isValidUuid(uuid) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid);
 }
 
 function validateSettings(body) {
@@ -100,19 +67,29 @@ function validateSettings(body) {
     sni: String(body.sni || '').trim(),
     fingerprint: String(body.fingerprint || 'chrome').trim(),
     alpn: String(body.alpn || 'h2,http/1.1').trim(),
-    tls: body.tls !== false
+    tls: body.tls !== false,
+    durationMonths: Number(body.durationMonths || 1),
+    trafficLimitGB: Number(body.trafficLimitGB || 10)
   };
 
   if (!settings.address) {
-    throw new Error('Address is required');
+    throw new Error('آدرس سرور الزامی است');
   }
 
   if (!Number.isInteger(settings.port) || settings.port < 1 || settings.port > 65535) {
-    throw new Error('Invalid port');
+    throw new Error('پورت نامعتبر است');
   }
 
   if (!isValidUuid(settings.uuid)) {
-    throw new Error('Invalid UUID');
+    throw new Error('UUID نامعتبر است');
+  }
+
+  if (!ALLOWED_DURATIONS.includes(settings.durationMonths)) {
+    throw new Error('محدودیت زمانی نامعتبر است');
+  }
+
+  if (!ALLOWED_TRAFFIC.includes(settings.trafficLimitGB)) {
+    throw new Error('محدودیت حجم نامعتبر است');
   }
 
   if (!settings.host) {
@@ -123,101 +100,12 @@ function validateSettings(body) {
     settings.sni = settings.address;
   }
 
+  settings.expiresAt = addMonths(new Date(), settings.durationMonths).toISOString();
+  settings.bytesUsed = 0;
+  settings.disabled = false;
+  settings.disabledReason = null;
+
   return settings;
-}
-
-function createXrayConfig(settings) {
-  return {
-    log: {
-      loglevel: 'warning'
-    },
-    inbounds: [
-      {
-        tag: 'vless-ws-in',
-        listen: '127.0.0.1',
-        port: XRAY_PORT,
-        protocol: 'vless',
-        settings: {
-          clients: [
-            {
-              id: settings.uuid,
-              level: 0
-            }
-          ],
-          decryption: 'none'
-        },
-        streamSettings: {
-          network: 'ws',
-          security: 'none',
-          wsSettings: {
-            path: settings.path,
-            headers: {
-              Host: settings.host
-            }
-          }
-        }
-      }
-    ],
-    outbounds: [
-      {
-        tag: 'direct',
-        protocol: 'freedom',
-        settings: {}
-      },
-      {
-        tag: 'block',
-        protocol: 'blackhole',
-        settings: {}
-      }
-    ]
-  };
-}
-
-function stopXray() {
-  if (xrayProcess) {
-    app.log.info('Stopping Xray');
-    xrayProcess.kill('SIGTERM');
-    xrayProcess = null;
-  }
-}
-
-function startXray(settings) {
-  stopXray();
-
-  const config = createXrayConfig(settings);
-
-  fs.writeFileSync(
-    XRAY_CONFIG_FILE,
-    JSON.stringify(config, null, 2),
-    'utf8'
-  );
-
-  app.log.info({
-    address: settings.address,
-    path: settings.path,
-    xrayPort: XRAY_PORT
-  }, 'Starting Xray');
-
-  xrayProcess = spawn(
-    'xray',
-    ['run', '-c', XRAY_CONFIG_FILE],
-    {
-      stdio: ['ignore', 'pipe', 'pipe']
-    }
-  );
-
-  xrayProcess.stdout.on('data', (data) => {
-    app.log.info(`[xray] ${data.toString().trim()}`);
-  });
-
-  xrayProcess.stderr.on('data', (data) => {
-    app.log.warn(`[xray] ${data.toString().trim()}`);
-  });
-
-  xrayProcess.on('exit', (code, signal) => {
-    app.log.warn({ code, signal }, 'Xray stopped');
-    xrayProcess = null;
-  });
 }
 
 function buildVlessUri(settings) {
@@ -243,139 +131,236 @@ function buildVlessUri(settings) {
   return `vless://${settings.uuid}@${settings.address}:${settings.port}?${params.toString()}#${encodedName}`;
 }
 
-function checkPassword(request, reply) {
-  if (!DASH_PASSWORD) {
-    return true;
-  }
-
-  const password = request.headers['x-dashboard-password'];
-
-  if (password !== DASH_PASSWORD) {
-    reply.code(401).send({
-      success: false,
-      error: 'Unauthorized'
-    });
-
-    return false;
-  }
-
-  return true;
-}
-
-currentSettings = loadSettings();
-
-app.register(fastifyStatic, {
-  root: path.join(__dirname, 'public'),
-  prefix: '/public/'
-});
-
-app.get('/', async (request, reply) => {
-  return reply.sendFile('maintenance.html');
-});
-
-app.get('/dash/page', async (request, reply) => {
-  return reply.sendFile('dashboard.html');
-});
-
-app.get('/api/config', async (request, reply) => {
-  if (!checkPassword(request, reply)) return;
-
+function buildXrayConfigJson(settings) {
   return {
-    success: true,
-    settings: currentSettings,
-    config: buildVlessUri(currentSettings)
-  };
-});
-
-app.post('/api/config', async (request, reply) => {
-  if (!checkPassword(request, reply)) return;
-
-  try {
-    const settings = validateSettings(request.body || {});
-
-    currentSettings = settings;
-    saveSettings(settings);
-    startXray(settings);
-
-    return {
-      success: true,
-      message: 'Configuration saved successfully',
-      settings,
-      config: buildVlessUri(settings)
-    };
-  } catch (error) {
-    return reply.code(400).send({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-app.get('/health', async () => {
-  return {
-    status: 'ok',
-    xray: Boolean(xrayProcess)
-  };
-});
-
-const proxy = httpProxy.createProxyServer({
-  target: `http://127.0.0.1:${XRAY_PORT}`,
-  ws: true,
-  changeOrigin: false
-});
-
-proxy.on('error', (error, request, socket) => {
-  app.log.error(error, 'WebSocket proxy error');
-
-  if (socket && !socket.destroyed) {
-    socket.destroy();
-  }
-});
-
-async function start() {
-  startXray(currentSettings);
-
-  await app.listen({
-    port: PORT,
-    host: '0.0.0.0'
-  });
-
-  app.log.info(`Dashboard available at /dash/page`);
-  app.log.info(`Public server listening on port ${PORT}`);
-
-  app.server.on('upgrade', (request, socket, head) => {
-    try {
-      const requestUrl = new URL(
-        request.url,
-        `http://${request.headers.host || 'localhost'}`
-      );
-
-      const configuredPath = currentSettings.path.replace(/\/+$/, '');
-      const requestedPath = requestUrl.pathname.replace(/\/+$/, '');
-
-      if (requestedPath !== configuredPath) {
-        socket.destroy();
-        return;
+    log: {
+      loglevel: 'warning'
+    },
+    stats: {},
+    api: {
+      tag: 'api',
+      services: ['StatsService']
+    },
+    policy: {
+      levels: {
+        0: {
+          statsUserUplink: true,
+          statsUserDownlink: true
+        }
       }
-
-      proxy.ws(request, socket, head);
-    } catch (error) {
-      app.log.error(error, 'Upgrade error');
-      socket.destroy();
+    },
+    inbounds: [
+      {
+        tag: 'api',
+        listen: '127.0.0.1',
+        port: 10085,
+        protocol: 'dokodemo-door',
+        settings: { address: '127.0.0.1' }
+      },
+      {
+        listen: '0.0.0.0',
+        port: settings.port,
+        protocol: 'vless',
+        settings: {
+          clients: settings.disabled
+            ? []
+            : [
+                {
+                  id: settings.uuid,
+                  email: settings.name,
+                  level: 0
+                }
+              ],
+          decryption: 'none'
+        },
+        streamSettings: {
+          network: 'ws',
+          security: settings.tls ? 'tls' : 'none',
+          wsSettings: {
+            path: settings.path,
+            headers: { Host: settings.host }
+          }
+        }
+      }
+    ],
+    outbounds: [{ protocol: 'freedom' }],
+    routing: {
+      rules: [{ type: 'field', inboundTag: ['api'], outboundTag: 'api' }]
     }
+  };
+}
+
+async function loadSettings() {
+  try {
+    const raw = await fs.readFile(SETTINGS_PATH, 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    const settings = defaultSettings();
+    await saveSettings(settings);
+    return settings;
+  }
+}
+
+async function saveSettings(settings) {
+  await fs.mkdir(path.dirname(SETTINGS_PATH), { recursive: true });
+  await fs.writeFile(SETTINGS_PATH, JSON.stringify(settings, null, 2), 'utf-8');
+}
+
+async function regenerateXrayConfig(settings) {
+  const xrayConfig = buildXrayConfigJson(settings);
+  await fs.mkdir(path.dirname(XRAY_CONFIG_PATH), { recursive: true });
+  await fs.writeFile(XRAY_CONFIG_PATH, JSON.stringify(xrayConfig, null, 2), 'utf-8');
+}
+
+async function restartXray() {
+  try {
+    await execAsync('pkill -f "xray run" || true');
+    exec(`xray run -config ${XRAY_CONFIG_PATH}`, (error) => {
+      if (error) {
+        fastify.log.error(`خطا در اجرای Xray: ${error.message}`);
+      }
+    });
+  } catch (error) {
+    fastify.log.error(`خطا در ری‌استارت Xray: ${error.message}`);
+  }
+}
+
+// -------------------- مانیتورینگ زمان و حجم --------------------
+
+async function getUserTrafficBytes(email) {
+  try {
+    const uplinkCmd = `xray api stats --server=127.0.0.1:10085 -name "user>>>${email}>>>traffic>>>uplink"`;
+    const downlinkCmd = `xray api stats --server=127.0.0.1:10085 -name "user>>>${email}>>>traffic>>>downlink"`;
+
+    const [uplinkResult, downlinkResult] = await Promise.all([
+      execAsync(uplinkCmd),
+      execAsync(downlinkCmd)
+    ]);
+
+    const uplink = parseInt(uplinkResult.stdout.match(/value:(\d+)/)?.[1] || '0', 10);
+    const downlink = parseInt(downlinkResult.stdout.match(/value:(\d+)/)?.[1] || '0', 10);
+
+    return uplink + downlink;
+  } catch {
+    return 0;
+  }
+}
+
+async function disableUserDueToLimit(settings, reason) {
+  settings.disabled = true;
+  settings.disabledReason = reason;
+
+  await saveSettings(settings);
+  await regenerateXrayConfig(settings);
+  await restartXray();
+
+  fastify.log.warn(`کاربر ${settings.name} غیرفعال شد. دلیل: ${reason}`);
+}
+
+async function checkLimits() {
+  const settings = await loadSettings();
+
+  if (settings.disabled) return;
+
+  const now = new Date();
+  const expiresAt = new Date(settings.expiresAt);
+
+  if (now >= expiresAt) {
+    await disableUserDueToLimit(settings, 'expired');
+    return;
+  }
+
+  const usedBytes = await getUserTrafficBytes(settings.name);
+  const limitBytes = settings.trafficLimitGB * 1024 * 1024 * 1024;
+
+  settings.bytesUsed = usedBytes;
+  await saveSettings(settings);
+
+  if (usedBytes >= limitBytes) {
+    await disableUserDueToLimit(settings, 'traffic_exceeded');
+  }
+}
+
+function startMonitor() {
+  const CHECK_INTERVAL_MS = 60 * 1000; // هر ۱ دقیقه
+
+  setInterval(() => {
+    checkLimits().catch((error) => {
+      fastify.log.error(`خطا در بررسی محدودیت‌ها: ${error.message}`);
+    });
+  }, CHECK_INTERVAL_MS);
+}
+
+// -------------------- روت‌ها --------------------
+
+app.register(require('@fastify/static'), {
+  root: path.join(__dirname, 'public')
+});
+
+fastify.get('/dash/page', async (req, res) => {
+  return res.sendFile('dashboard.html');
+});
+
+fastify.get('/', async (req, res) => {
+  return res.type('text/html').send(`
+    <html>
+      <body style="background:#0f172a;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;">
+        <h1>سایت در حال تعمیر است</h1>
+      </body>
+    </html>
+  `);
+});
+
+fastify.get('/api/config', async (req, res) => {
+  const settings = await loadSettings();
+  const config = buildVlessUri(settings);
+
+  return res.send({ settings, config });
+});
+
+fastify.post('/api/config', async (req, res) => {
+  try {
+    const settings = validateSettings(req.body);
+
+    await saveSettings(settings);
+    await regenerateXrayConfig(settings);
+    await restartXray();
+
+    const config = buildVlessUri(settings);
+
+    return res.send({ success: true, config, settings });
+  } catch (error) {
+    return res.status(400).send({ error: error.message });
+  }
+});
+
+fastify.get('/api/status', async (req, res) => {
+  const settings = await loadSettings();
+
+  return res.send({
+    disabled: settings.disabled,
+    disabledReason: settings.disabledReason,
+    expiresAt: settings.expiresAt,
+    bytesUsed: settings.bytesUsed,
+    trafficLimitGB: settings.trafficLimitGB
   });
-}
+});
 
-async function shutdown() {
-  stopXray();
-  await app.close();
-  process.exit(0);
-}
+// -------------------- شروع سرور --------------------
 
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
+const PORT = Number(env('PORT', '3000'));
 
-start().catch((error) => {
-  app.log.error(error);
-  process.exit(1);
+fastify.listen({ port: PORT, host: '0.0.0.0' }, async (error) => {
+  if (error) {
+    fastify.log.error(error);
+    process.exit(1);
+  }
+
+  const settings = await loadSettings();
+  await regenerateXrayConfig(settings);
+  await restartXray();
+
+  startMonitor();
+
+  fastify.log.info(`سرور روی پورت ${PORT} اجرا شد`);
 });
