@@ -5,13 +5,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>داشبورد</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+    </style>
 </head>
 
 <body class="bg-gray-900 min-h-screen text-white p-6">
     <div class="max-w-4xl mx-auto">
+        <div>
+            <img src="./logo.png" alt="" class="mx-auto mb-4 w-64">
+            <div class="flex justify-center gap-4 mb-6">
+                <a href="https://www.youtube.com/@isatisstack" target="_blank" class="rounded-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 block text-center">کانال یوتیوب</a>
+            <a href="https://t.me/isatisstackteam" target="_blank" class="rounded-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 block text-center">کانال تلگرام</a>
+            </div>
+        </div>
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold">ساخت کانفیگ VLESS</h1>
+            <h1 class="text-2xl font-bold">پنل ساخت کانفیگ ایساتیس استک (v1.0)</h1>
             <a href="/logout" class="text-red-400 hover:text-red-300">خروج</a>
         </div>
 
@@ -36,7 +50,7 @@
                     <label class="block text-sm mb-1">UUID</label>
                     <div class="flex">
                         <input type="text" name="uuid" id="uuid" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                            class="w-9/12 p-2 rounded bg-gray-700 border border-gray-600" required>
+                            class="w-9/12 p-2 rounded bg-gray-700 border border-gray-600 ml-2" required>
                         <button type="button" onclick="generateUUID('uuid')"
                             class="w-3/12 bg-green-600 hover:bg-green-700 p-2 rounded font-bold">ساخت uuid</button>
                     </div>
@@ -79,7 +93,7 @@
                     <select name="alpn" class="w-full p-2 rounded bg-gray-700 border border-gray-600">
                         <option value="h3">h3</option>
                         <option value="h2">h2</option>
-                        <option value="http/1.1">http/1.1</option>
+                        <option value="http/1.1" selected>http/1.1</option>
                     </select>
                 </div>
             </div>
