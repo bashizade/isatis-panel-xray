@@ -4,396 +4,284 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>ساخت کانفیگ VLESS</title>
-
+  <title>پنل مدیریت VLESS</title>
   <script src="https://cdn.tailwindcss.com"></script>
-
   <script>
     tailwind.config = {
       darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Tahoma', 'Arial', 'sans-serif']
-          }
-        }
-      }
+      theme: { extend: { fontFamily: { sans: ['Tahoma', 'Arial', 'sans-serif'] } } }
     }
   </script>
 </head>
 
 <body class="min-h-screen bg-slate-950 text-white font-sans">
-  <div class="max-w-3xl mx-auto px-4 py-8">
 
-    <header class="mb-8">
-      <div class="flex items-center justify-between gap-4">
-        <div>
-          <p class="text-sm text-cyan-400 mb-2">Railway Xray Panel</p>
-          <h1 class="text-2xl md:text-3xl font-bold">
-            ساخت کانفیگ VLESS
-          </h1>
-        </div>
+  <!-- مودال ورود -->
+  <div id="loginModal" class="fixed inset-0 bg-black/70 flex items-center justify-center hidden z-50">
+    <form id="loginForm" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm space-y-4">
+      <h2 class="text-xl font-bold text-cyan-400">ورود به پنل</h2>
+      <input id="loginUsername" type="text" placeholder="نام کاربری" required
+        class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
+      <input id="loginPassword" type="password" placeholder="رمز عبور" required
+        class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
+      <div id="loginError" class="hidden text-red-400 text-sm"></div>
+      <button type="submit" class="w-full rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3">ورود</button>
+    </form>
+  </div>
 
-        <div id="status" class="text-xs rounded-full px-3 py-2 bg-slate-800 text-slate-300">
-          آماده
-        </div>
+  <div id="app" class="max-w-4xl mx-auto px-4 py-8 hidden">
+
+    <header class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <p class="text-sm text-cyan-400 mb-1">Railway Xray Panel</p>
+        <h1 class="text-2xl md:text-3xl font-bold">مدیریت کاربران VLESS</h1>
       </div>
-
-      <p class="text-slate-400 mt-3 text-sm">
-        اطلاعات اتصال را وارد کنید و کانفیگ VLESS را بسازید.
-      </p>
+      <button id="logoutButton" class="text-xs rounded-full px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300">خروج</button>
     </header>
 
-    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-7 shadow-xl">
+    <!-- خلاصه وضعیت -->
+    <div id="statsGrid" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"></div>
 
-      <form id="configForm" class="space-y-5">
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-          <div class="md:col-span-2">
-            <label class="block text-sm text-slate-300 mb-2">
-              نام کانفیگ
-            </label>
-
-            <input id="name" name="name" type="text" required placeholder="مثلاً: My-Server-1"
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
-          </div>
-          <div>
-            <label class="block text-sm text-slate-300 mb-2">
-              Address
-            </label>
-
-            <input id="address" name="address" type="text" required placeholder="example.up.railway.app"
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
-          </div>
-
-          <div>
-            <label class="block text-sm text-slate-300 mb-2">
-              Port
-            </label>
-
-            <input id="port" name="port" type="number" min="1" max="65535" required
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="block text-sm text-slate-300 mb-2">
-              UUID
-            </label>
-
-            <div class="flex gap-2">
-              <input id="uuid" name="uuid" type="text" required
-                class="flex-1 rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400">
-
-              <button id="generateUuidButton" type="button"
-                class="shrink-0 rounded-xl bg-slate-700 hover:bg-slate-600 px-4 py-3 text-sm font-bold transition">
-                ساخت خودکار
-              </button>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-            <div>
-              <label class="block text-sm text-slate-300 mb-2">
-                محدودیت زمانی
-              </label>
-              <select id="durationMonths" name="durationMonths"
-                class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
-                <option value="1">۱ ماهه</option>
-                <option value="3">۳ ماهه</option>
-                <option value="6">۶ ماهه</option>
-                <option value="12">۱ ساله</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-sm text-slate-300 mb-2">
-                محدودیت حجم
-              </label>
-              <select id="trafficLimitGB" name="trafficLimitGB"
-                class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
-                <option value="10">۱۰ گیگابایت</option>
-                <option value="20">۲۰ گیگابایت</option>
-                <option value="30">۳۰ گیگابایت</option>
-                <option value="40">۴۰ گیگابایت</option>
-                <option value="50">۵۰ گیگابایت</option>
-                <option value="60">۶۰ گیگابایت</option>
-                <option value="70">۷۰ گیگابایت</option>
-                <option value="80">۸۰ گیگابایت</option>
-                <option value="90">۹۰ گیگابایت</option>
-                <option value="100">۱۰۰ گیگابایت</option>
-              </select>
-            </div>
-
-          </div>
-
-          <div>
-            <label class="block text-sm text-slate-300 mb-2">
-              WebSocket Path
-            </label>
-
-            <input id="path" name="path" type="text" required placeholder="/api/v1/shadcdn/"
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400">
-          </div>
-
-          <div>
-            <label class="block text-sm text-slate-300 mb-2">
-              Host
-            </label>
-
-            <input id="host" name="host" type="text" required
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
-          </div>
-
-          <div>
-            <label class="block text-sm text-slate-300 mb-2">
-              SNI
-            </label>
-
-            <input id="sni" name="sni" type="text" required
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
-          </div>
-
-          <div>
-            <label class="block text-sm text-slate-300 mb-2">
-              Fingerprint
-            </label>
-
-            <select id="fingerprint" name="fingerprint"
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
-              <option value="chrome">chrome</option>
-              <option value="firefox">firefox</option>
-              <option value="safari">safari</option>
-              <option value="edge">edge</option>
-              <option value="randomized">randomized</option>
-            </select>
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="block text-sm text-slate-300 mb-2">
-              ALPN
-            </label>
-
-            <select name="alpn" id="alpn"
-              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 font-mono text-sm outline-none focus:border-cyan-400">
-              <option value="">select</option>
-              <option value="http/1.1">http/1.1</option>
-              <option value="h2">h2</option>
-              <option value="h3">h3</option>
-            </select>
-          </div>
-
+    <!-- فرم ساخت کاربر -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-7 shadow-xl mb-6">
+      <h2 class="font-bold mb-4">ساخت کاربر جدید</h2>
+      <form id="userForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="md:col-span-2">
+          <label class="block text-sm text-slate-300 mb-2">نام کاربر</label>
+          <input id="name" required placeholder="مثلاً: ali-1"
+            class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400">
         </div>
-
-        <label class="flex items-center gap-3 cursor-pointer">
-          <input id="tls" name="tls" type="checkbox" checked class="w-5 h-5 accent-cyan-400">
-
-          <span class="text-sm text-slate-300">
-            فعال بودن TLS
-          </span>
-        </label>
-
-        <button type="submit"
-          class="w-full rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 transition">
-          ساخت و ذخیره کانفیگ
-        </button>
-
+        <div>
+          <label class="block text-sm text-slate-300 mb-2">محدودیت زمانی</label>
+          <select id="durationKey" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"></select>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-300 mb-2">محدودیت حجم</label>
+          <select id="volumeGb" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"></select>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-300 mb-2">تعداد اتصال هم‌زمان</label>
+          <select id="connectionLimit" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-400"></select>
+        </div>
+        <div class="md:col-span-2">
+          <button type="submit" class="w-full rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3">ساخت کاربر</button>
+        </div>
       </form>
-
-      <div id="limitsSummary" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 hidden">
-        <div class="rounded-xl bg-slate-800 border border-slate-700 p-3 text-sm">
-          <span class="text-slate-400">تاریخ انقضا:</span>
-          <span id="expiresAtText" class="text-cyan-300 font-bold block mt-1"></span>
-        </div>
-
-        <div class="rounded-xl bg-slate-800 border border-slate-700 p-3 text-sm">
-          <span class="text-slate-400">سقف حجم:</span>
-          <span id="trafficLimitText" class="text-cyan-300 font-bold block mt-1"></span>
-        </div>
-      </div>
 
       <div id="message" class="hidden mt-5 rounded-xl p-4 text-sm"></div>
 
       <div id="result" class="hidden mt-6">
         <div class="flex items-center justify-between mb-2">
-          <h2 class="font-bold">کانفیگ ساخته‌شده</h2>
-
-          <button id="copyButton" type="button" class="text-sm rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-2">
-            کپی
-          </button>
+          <h3 class="font-bold">کانفیگ ساخته‌شده</h3>
+          <button id="copyButton" type="button" class="text-sm rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-2">کپی</button>
         </div>
-
-        <textarea id="configOutput" readonly rows="5" dir="ltr"
+        <textarea id="configOutput" readonly rows="4" dir="ltr"
           class="w-full rounded-xl bg-slate-950 border border-slate-700 p-4 text-xs md:text-sm font-mono text-cyan-300 outline-none"></textarea>
       </div>
-
     </section>
 
-    <footer class="text-center text-xs text-slate-600 mt-6">
-      Configuration is stored on the server
-    </footer>
+    <!-- لیست کاربران -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-7 shadow-xl">
+      <h2 class="font-bold mb-4">کاربران</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-right">
+          <thead class="text-slate-400 border-b border-slate-800">
+            <tr>
+              <th class="py-2 px-2">نام</th>
+              <th class="py-2 px-2">انقضا</th>
+              <th class="py-2 px-2">وضعیت</th>
+              <th class="py-2 px-2">عملیات</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
   </div>
 
 <script>
-  const form = document.getElementById('configForm');
-  const message = document.getElementById('message');
-  const result = document.getElementById('result');
-  const output = document.getElementById('configOutput');
-  const statusBox = document.getElementById('status');
-  const copyButton = document.getElementById('copyButton');
-  const generateUuidButton = document.getElementById('generateUuidButton');
-  const uuidInput = document.getElementById('uuid');
+  const el = (id) => document.getElementById(id);
 
-  const fields = [
-    'name',
-    'address',
-    'port',
-    'uuid',
-    'path',
-    'host',
-    'sni',
-    'fingerprint',
-    'alpn',
-    'tls',
-    'durationMonths',
-    'trafficLimitGB'
-  ];
-
-  function showMessage(text, type = 'success') {
-    message.classList.remove('hidden');
-
-    if (type === 'error') {
-      message.className =
-        'mt-5 rounded-xl p-4 text-sm bg-red-950 border border-red-800 text-red-300';
-    } else {
-      message.className =
-        'mt-5 rounded-xl p-4 text-sm bg-emerald-950 border border-emerald-800 text-emerald-300';
+  // ---------------- احراز هویت ----------------
+  async function checkAuth() {
+    const res = await fetch('/api/v1/stats');
+    if (res.status === 401) {
+      el('loginModal').classList.remove('hidden');
+      el('app').classList.add('hidden');
+      return false;
     }
-
-    message.textContent = text;
+    el('loginModal').classList.add('hidden');
+    el('app').classList.remove('hidden');
+    return true;
   }
 
-  function setFormValues(settings) {
-    for (const field of fields) {
-      const element = document.getElementById(field);
-
-      if (!element || settings[field] === undefined) continue;
-
-      if (element.type === 'checkbox') {
-        element.checked = Boolean(settings[field]);
-      } else {
-        element.value = settings[field];
-      }
+  el('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const res = await fetch('/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: el('loginUsername').value,
+        password: el('loginPassword').value
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      el('loginError').textContent = data.error || 'ورود ناموفق بود';
+      el('loginError').classList.remove('hidden');
+      return;
     }
+    await bootstrap();
+  });
+
+  el('logoutButton').addEventListener('click', async () => {
+    await fetch('/api/v1/auth/logout', { method: 'POST' });
+    location.reload();
+  });
+
+  // ---------------- بارگذاری آمار ----------------
+  async function loadStats() {
+    const res = await fetch('/api/v1/stats');
+    const s = await res.json();
+    el('statsGrid').innerHTML = `
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-center">
+        <div class="text-xs text-slate-400">کل کاربران</div>
+        <div class="text-xl font-bold text-cyan-300">${s.totalUsers}</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-center">
+        <div class="text-xs text-slate-400">فعال</div>
+        <div class="text-xl font-bold text-emerald-400">${s.activeUsers}</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-center">
+        <div class="text-xs text-slate-400">منقضی</div>
+        <div class="text-xl font-bold text-red-400">${s.expiredUsers}</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-center">
+        <div class="text-xs text-slate-400">وضعیت Xray</div>
+        <div class="text-sm font-bold ${s.xrayRunning ? 'text-emerald-400' : 'text-red-400'}">
+          ${s.xrayRunning ? 'در حال اجرا' : 'متوقف'}
+        </div>
+      </div>
+    `;
   }
 
-  function getFormValues() {
-    return {
-      name: document.getElementById('name').value.trim(),
-      address: document.getElementById('address').value.trim(),
-      port: Number(document.getElementById('port').value),
-      uuid: document.getElementById('uuid').value.trim(),
-      path: document.getElementById('path').value.trim(),
-      host: document.getElementById('host').value.trim(),
-      sni: document.getElementById('sni').value.trim(),
-      fingerprint: document.getElementById('fingerprint').value,
-      alpn: document.getElementById('alpn').value.trim(),
-      tls: document.getElementById('tls').checked,
-      durationMonths: Number(document.getElementById('durationMonths').value),
-      trafficLimitGB: Number(document.getElementById('trafficLimitGB').value)
+  // ---------------- بارگذاری گزینه‌ها ----------------
+  async function loadOptions() {
+    const res = await fetch('/api/v1/options');
+    const opt = await res.json();
+
+    el('durationKey').innerHTML = opt.durations
+      .map(d => `<option value="${d.key}">${d.label}</option>`).join('');
+
+    el('volumeGb').innerHTML = opt.volumes
+      .map(v => `<option value="${v}">${v} گیگابایت</option>`).join('');
+
+    el('connectionLimit').innerHTML = opt.connectionLimits
+      .map(c => `<option value="${c}">${c} کاربره</option>`).join('');
+  }
+
+  // ---------------- بارگذاری لیست کاربران ----------------
+  async function loadUsers() {
+    const res = await fetch('/api/v1/users');
+    const users = await res.json();
+
+    el('usersTableBody').innerHTML = users.map(u => {
+      const expired = new Date(u.expires_at) <= new Date();
+      const statusLabel = u.disabled ? 'غیرفعال' : (expired ? 'منقضی' : 'فعال');
+      const statusColor = u.disabled || expired ? 'text-red-400' : 'text-emerald-400';
+
+      return `
+        <tr class="border-b border-slate-800/60">
+          <td class="py-2 px-2">${u.name}</td>
+          <td class="py-2 px-2 text-xs text-slate-400">${new Date(u.expires_at).toLocaleDateString('fa-IR')}</td>
+          <td class="py-2 px-2 ${statusColor} text-xs font-bold">${statusLabel}</td>
+          <td class="py-2 px-2 space-x-1 space-x-reverse">
+            <button data-action="config" data-id="${u.id}" class="text-xs bg-slate-700 hover:bg-slate-600 rounded-lg px-2 py-1">کانفیگ</button>
+            <button data-action="toggle" data-id="${u.id}" class="text-xs bg-amber-700 hover:bg-amber-600 rounded-lg px-2 py-1">${u.disabled ? 'فعال‌سازی' : 'غیرفعال‌سازی'}</button>
+            <button data-action="delete" data-id="${u.id}" class="text-xs bg-red-700 hover:bg-red-600 rounded-lg px-2 py-1">حذف</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  el('usersTableBody').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const { action, id } = btn.dataset;
+
+    if (action === 'config') {
+      const res = await fetch(`/api/v1/users/${id}/config`);
+      const data = await res.json();
+      el('configOutput').value = data.config;
+      el('result').classList.remove('hidden');
+      el('configOutput').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    if (action === 'toggle') {
+      await fetch(`/api/v1/users/${id}/toggle`, { method: 'PATCH' });
+      await Promise.all([loadUsers(), loadStats()]);
+    }
+
+    if (action === 'delete') {
+      if (!confirm('کاربر حذف شود؟')) return;
+      await fetch(`/api/v1/users/${id}`, { method: 'DELETE' });
+      await Promise.all([loadUsers(), loadStats()]);
+    }
+  });
+
+  // ---------------- ساخت کاربر جدید ----------------
+  el('userForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const message = el('message');
+
+    const body = {
+      name: el('name').value.trim(),
+      durationKey: el('durationKey').value,
+      volumeGb: Number(el('volumeGb').value),
+      connectionLimit: Number(el('connectionLimit').value)
     };
-  }
 
-  function showLimitsSummary(settings) {
-    const summary = document.getElementById('limitsSummary');
-    const expiresAtText = document.getElementById('expiresAtText');
-    const trafficLimitText = document.getElementById('trafficLimitText');
+    const res = await fetch('/api/v1/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
 
-    const expiresDate = new Date(settings.expiresAt);
-
-    expiresAtText.textContent = expiresDate.toLocaleDateString('fa-IR');
-    trafficLimitText.textContent = `${settings.trafficLimitGB} گیگابایت`;
-
-    summary.classList.remove('hidden');
-  }
-
-  async function loadConfig() {
-    try {
-      const response = await fetch('/api/config');
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'خطا در دریافت تنظیمات');
-      }
-
-      setFormValues(data.settings);
-
-      if (data.config) {
-        output.value = data.config;
-        result.classList.remove('hidden');
-        showLimitsSummary(data.settings);
-      }
-
-      statusBox.textContent = 'تنظیمات ذخیره‌شده بارگذاری شد';
-    } catch (error) {
-      showMessage(error.message, 'error');
-      statusBox.textContent = 'خطا';
+    message.classList.remove('hidden');
+    if (!res.ok || !data.success) {
+      message.className = 'mt-5 rounded-xl p-4 text-sm bg-red-950 border border-red-800 text-red-300';
+      message.textContent = data.error || 'ساخت کاربر ناموفق بود';
+      return;
     }
+
+    message.className = 'mt-5 rounded-xl p-4 text-sm bg-emerald-950 border border-emerald-800 text-emerald-300';
+    message.textContent = 'کاربر با موفقیت ساخته و Xray ری‌استارت شد.';
+
+    el('configOutput').value = data.config;
+    el('result').classList.remove('hidden');
+
+    el('userForm').reset();
+    await Promise.all([loadUsers(), loadStats()]);
+  });
+
+  el('copyButton').addEventListener('click', async () => {
+    await navigator.clipboard.writeText(el('configOutput').value);
+    el('copyButton').textContent = 'کپی شد';
+    setTimeout(() => el('copyButton').textContent = 'کپی', 1500);
+  });
+
+  // ---------------- شروع ----------------
+  async function bootstrap() {
+    const ok = await checkAuth();
+    if (!ok) return;
+    await Promise.all([loadOptions(), loadStats(), loadUsers()]);
   }
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-
-    statusBox.textContent = 'در حال ذخیره...';
-
-    try {
-      const response = await fetch('/api/config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(getFormValues())
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'ساخت کانفیگ ناموفق بود');
-      }
-
-      output.value = data.config;
-      result.classList.remove('hidden');
-
-      showLimitsSummary(data.settings);
-
-      showMessage('کانفیگ با موفقیت ذخیره و Xray ری‌استارت شد.');
-      statusBox.textContent = 'فعال';
-    } catch (error) {
-      showMessage(error.message, 'error');
-      statusBox.textContent = 'خطا';
-    }
-  });
-
-  copyButton.addEventListener('click', async () => {
-    await navigator.clipboard.writeText(output.value);
-
-    copyButton.textContent = 'کپی شد';
-
-    setTimeout(() => {
-      copyButton.textContent = 'کپی';
-    }, 1500);
-  });
-
-  generateUuidButton.addEventListener('click', () => {
-    uuidInput.value = crypto.randomUUID();
-    uuidInput.focus();
-  });
-
-  loadConfig();
+  bootstrap();
 </script>
 
 </body>
-
 </html>
