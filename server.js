@@ -105,7 +105,7 @@ app.post('/save', requireAuth, (req, res) => {
       params.set('allowInsecure', '0');
       params.set('type', protocol);
       params.set('host', host);
-      params.set('path', path + '/' + uuid);
+      params.set('path', path);
       if (protocol === 'xhttp') params.set('mode', 'auto');
 
       const link = `vless://${uuid}@${address}:${port}?${params.toString()}#${encodeURIComponent(username)}`;
