@@ -19,7 +19,7 @@ RUN curl -fsSL -o /tmp/xray.zip \
 
 # نصب dependency های Node
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 # کپی بقیه‌ی سورس
 COPY . .
